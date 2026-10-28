@@ -1,18 +1,64 @@
 package edu.unc.comp301.zombies;
 
-public class Survivor implements ISurvivor {
+import java.util.Random;
 
-  Base b = new Base();
+public class Survivor implements ISurvivor {
+  private final Base base;
+  private final Random random = new Random();
   private volatile boolean running = true;
-  private boolean defending = false;
+  private volatile boolean defending = false;
 
   public Survivor(Base base) {
-    this.b = base;
+    this.base = base;
   }
 
-  @Override
-  public void stop() {
-    running = false;
+  protected void fortify() throws InterruptedException {
+    System.out.println(Thread.currentThread().getName() + " is fortifying the base.");
+    base.useTool("fortification");
+    Thread.sleep(2000);
+  }
+
+  protected void scavenge() throws InterruptedException {
+    System.out.println(Thread.currentThread().getName() + " is scavenging for supplies.");
+    Thread.sleep(1000 + random.nextInt(3001)); // 1 to 4 seconds
+    base.addSupplies(2);
+  }
+
+  protected void rest() throws InterruptedException {
+    System.out.println(Thread.currentThread().getName() + " is resting.");
+    Thread.sleep(2000);
+  }
+
+  protected void defend() throws InterruptedException {
+    defending = true;
+    try {
+      System.out.println(Thread.currentThread().getName() + " is defending the base from zombies!");
+      Thread.sleep(2000);
+    } finally {
+      defending = false;
+    }
+  }
+
+  public boolean isDefending() {
+    return defending;
+  }
+
+  protected void performAction() throws InterruptedException {
+    if (base.isUnderAttack()) {
+      defend();
+      return;
+    }
+    switch (random.nextInt(3)) {
+      case 0:
+        scavenge();
+        break;
+      case 1:
+        fortify();
+        break;
+      default:
+        rest();
+        break;
+    }
   }
 
   @Override
@@ -27,42 +73,8 @@ public class Survivor implements ISurvivor {
     }
   }
 
-  protected void performAction() throws InterruptedException {
-    if (defending) {
-      System.out.println("Defending zombies!");
-      Thread.sleep(2000);
-      defending = false;
-    } else {
-      int random = (int) (Math.random() * 3);
-      if (random == 0) {
-        scavenge();
-      } else if (random == 1) {
-        fortify();
-      } else {
-        rest();
-      }
-    }
-  }
-
-  protected void fortify() throws InterruptedException {
-    b.useTool("fortification");
-    System.out.println(Thread.currentThread().getName() + " is fortifying.");
-    Thread.sleep(2000);
-  }
-
-  protected void scavenge() throws InterruptedException {
-    int sleep = (int) (Math.random() * 4000);
-    System.out.println(Thread.currentThread().getName() + " is searching for supplies.");
-    Thread.sleep(sleep);
-    b.addSupplies(2);
-  }
-
-  protected void rest() throws InterruptedException {
-    System.out.println(Thread.currentThread().getName() + " is resting.");
-    Thread.sleep(2000);
-  }
-
-  public boolean isDefending() {
-    return defending;
+  @Override
+  public void stop() {
+    running = false;
   }
 }
